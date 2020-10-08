@@ -12,18 +12,14 @@ import excel
 def parse(item, state):
     """Парсинг sql ответов"""
     if state == 'table':
-        a = []
-        for i in item:
-            a.append(i[1])
-        return a
+        a = [i[1] for i in item]
+    elif state == 'string':
+        a = [i[0] for i in item]
+    elif state == 'string_slice':
+        a = [i[0][9:11] for i in item]
     else:
-        a = []
-        for i in item:
-            if state == 'string':
-                a.append(i[0])
-            elif state == 'string_slice':
-                a.append(i[0][9:11])
-        return a
+        a = False
+    return a
 
 
 def translit_def(unit):
@@ -37,12 +33,7 @@ def translit_def(unit):
                 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '',
                 'ы': 'y', 'ь': "'", 'э': 'e', 'ю': 'yu',
                 'я': 'ya'}
-    translit = ''
-    for i in unit.lower():
-        if i in alphabet:
-            translit += alphabet[i]
-        else:
-            continue
+    translit = ''.join([alphabet[i] for i in unit.lower() if i in alphabet])
     return translit
 
 
@@ -101,7 +92,7 @@ def year_def(message, month, keyboard):
 
 
 def report_def(message, month, year, keyboard):
-    '''Отчет'''
+    """Отчет"""
     unit = message.text
     my_unit = unit_salfe_def(message)
     try:
@@ -128,14 +119,8 @@ def report_def(message, month, year, keyboard):
         sql_request = 'SELECT fio, id_telegramm FROM {}'.format(data_name)
         records = sql_ps.connect_bd(message, sql_request, 'select')
         records = Counter(records)
-        records_x = {}
-        list_keys = list(records.keys())
-        list_keys.sort()
-        for i in list_keys:
-            records_x[i] = records[i]
-        send_xlsx = {}
-        for i in records_x:
-            send_xlsx[i[0]] = int(records_x[i])*100
+        list_keys = sorted(list(records.keys()))
+        send_xlsx = {i[0]: records[i]*100 for i in list_keys}
         file = excel.send_xlsx(send_xlsx)
         if file is None:
             bot.send_message(message.from_user.id, 'Файл xlsx не сформирован, попробуйте еще раз.',
@@ -434,11 +419,9 @@ def kredit_def(message, month, keyboard):
         sql_request = "SELECT id_telegramm FROM {} WHERE id_telegramm = '{}'".format(data_name,
                                                                                      str(message.from_user.id))
         records = Counter(sql_ps.connect_bd(message, sql_request, 'select'))
-        n = 0
-        for i in records:
-            n = records[i]*100
-        n = 'Вы должны - ' + str(n) + ' рублей'
-        bot.send_message(message.from_user.id, n, reply_markup=keyboard)
+        n = [records[i]*100 for i in records]
+        answer = 'Вы должны - ' + str(n[0]) + ' рублей'
+        bot.send_message(message.from_user.id, answer, reply_markup=keyboard)
     else:
         txt = 'Вы не зарегистрированы' + '\n' + 'Ваш id - ' + str(message.from_user.id)
         color = 'red'
@@ -482,11 +465,8 @@ def list_staff_def(message, keyboard):
                 unit = unit.lower()
                 sql_request = "SELECT fio, adm FROM staff WHERE unit='{}'".format(unit)
                 records = Counter(sql_ps.connect_bd(message, sql_request, 'select'))
-                list_staff = []
+                list_staff = sorted([i for i in records])
                 send_xlsx = {}
-                for i in records:
-                    list_staff.append(i)
-                list_staff = sorted(list_staff)
                 for i in list_staff:
                     send_xlsx[i[0]] = i[1]
                 file = excel.send_xlsx(send_xlsx)
