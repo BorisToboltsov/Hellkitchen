@@ -23,7 +23,7 @@ def send_xlsx(a):
         sheet.cell(column=1, row=row, value=fio)
         sheet.cell(column=2, row=row, value=summ)
     try:
-        file = settings.xlsx_path + 'report_' + str(data) + '.xlsx'
+        file = settings.XLSX_PATH + 'report_' + str(data) + '.xlsx'
         wb.save(file)
     except PermissionError:
         file = None
