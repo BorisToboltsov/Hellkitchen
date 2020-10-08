@@ -2,7 +2,7 @@ import telebot
 from telebot import types
 import settings
 
-bot = telebot.TeleBot(settings.token_telegram)  # Подключение к телеграмму
+bot = telebot.TeleBot(settings.TOKEN_TELEGRAM)  # Подключение к телеграмму
 
 
 def keyboard(*args):

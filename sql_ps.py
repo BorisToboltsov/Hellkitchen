@@ -7,8 +7,8 @@ from bot_key import bot
 def connect_bd(message, sql_request, state):
     """Подключение и запросы к бд"""
     try:
-        conn = psycopg2.connect(dbname=settings.dbname, user=settings.user,
-                                password=settings.password, host=settings.host)
+        conn = psycopg2.connect(dbname=settings.DB_NAME, user=settings.USER,
+                                password=settings.PASSWORD, host=settings.HOST)
     except psycopg2.OperationalError:
         bot.reply_to(message, 'Не удалось подключиться к БД!')
         return
