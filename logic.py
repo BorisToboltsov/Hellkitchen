@@ -11,9 +11,7 @@ import excel
 
 def parse(item, state):
     """Парсинг sql ответов"""
-    if state == 'table':
-        a = [i[1] for i in item]
-    elif state == 'string':
+    if state == 'string':
         a = [i[0] for i in item]
     elif state == 'string_slice':
         a = [i[0][9:11] for i in item]
@@ -109,13 +107,9 @@ def report_def(message, month, year, keyboard):
         return
     unit = translit_def(unit)
     data_name = month + str(year) + unit
-    sql_request = '''SELECT n.nspname, c.relname
-                     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-                     WHERE c.relkind = 'r' AND n.nspname NOT IN('pg_catalog',
-                     'information_schema');'''
-    records = sql_ps.connect_bd(message, sql_request, 'select')
+    records = sql_ps.all_table_list()
     answer = 'Отчета за этот период нету.'
-    if data_name.lower() in parse(records, 'table'):
+    if data_name.lower() in records:
         sql_request = 'SELECT fio, id_telegramm FROM {}'.format(data_name)
         records = sql_ps.connect_bd(message, sql_request, 'select')
         records = Counter(records)
@@ -132,6 +126,7 @@ def report_def(message, month, year, keyboard):
             try:
                 os.remove(file)
             except FileNotFoundError and PermissionError:
+                print('Не прошло удаление файла!')
                 pass
     else:
         bot.send_message(message.from_user.id, answer, reply_markup=keyboard)
@@ -257,33 +252,8 @@ def unit_def(message, id_telegramm, fio, keyboard):
                                      reply_markup=keyboard)
                     return
             else:
-                '''
-                bot.reply_to(message, 'Такого подразделения еще не создано, вы уверены что хотите создать его?')
-                bot.send_message(message.from_user.id, 'Введите да или нет')
-                bot.register_next_step_handler(message, new_unit_def, id_telegramm, fio, unit, keyboard)
-                '''
                 bot.reply_to(message, 'Такого подразделения еще не создано')
                 return
-
-
-'''
-def new_unit_def(message, id_telegramm, fio, unit, keyboard):
-    choice = message.text
-    try:
-        choice = choice.lower()
-    except:
-        bot.reply_to(message, 'Здесь необходимо ввести да или нет')
-        bot.register_next_step_handler(message, new_unit_def, id_telegramm, fio, unit, keyboard)
-    if choice == 'да':
-        bot.send_message(message.from_user.id, 'Является ли сотрудник администратором?')
-        bot.register_next_step_handler(message, new_staff_def, id_telegramm, fio, unit, keyboard)
-    elif choice == 'нет':
-        bot.reply_to(message, 'Выберите что необходимо сделать', reply_markup=keyboard)
-        return
-    else:
-        bot.reply_to(message, 'Здесь необходимо ввести да или нет')
-        bot.register_next_step_handler(message, new_unit_def, id_telegramm, fio, unit, keyboard)
-'''
 
 
 def registration(message):
@@ -298,18 +268,9 @@ def registration(message):
             bot.send_message(message.from_user.id, 'Подразделение указано неверно!')
             return
         data_name = time_def()[0]+time_def()[1]+unit
-        sql_request = '''SELECT n.nspname, c.relname
-                         FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-                         WHERE c.relkind = 'r' AND n.nspname NOT IN('pg_catalog',
-                        'information_schema');'''
-        records = sql_ps.connect_bd(message, sql_request, 'select')
-        if data_name.lower() not in parse(records, 'table'):
-            sql_request = 'CREATE TABLE IF NOT EXISTS {} (like staff including all)'.format(data_name)
-            sql_ps.connect_bd(message, sql_request, 'create')
-            sql_request = 'ALTER TABLE {} DROP CONSTRAINT {}_pkey'.format(data_name, data_name)
-            sql_ps.connect_bd(message, sql_request, 'create')
-            sql_request = 'ALTER TABLE {} ADD PRIMARY KEY (install_date)'.format(data_name)
-            sql_ps.connect_bd(message, sql_request, 'create')
+        records = sql_ps.all_table_list()
+        if data_name.lower() not in records:
+            sql_ps.create_new_table(data_name)
         sql_request = "SELECT install_date FROM {} WHERE id_telegramm = '{}'".format(data_name,
                                                                                      str(message.from_user.id))
         records = sql_ps.connect_bd(message, sql_request, 'select')
@@ -404,23 +365,17 @@ def kredit_def(message, month, keyboard):
             bot.send_message(message.from_user.id, 'Подразделение указано неверно!')
             return
         data_name = month + time_def()[1] + unit
-        sql_request = '''SELECT n.nspname, c.relname
-                         FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-                         WHERE c.relkind = 'r' AND n.nspname NOT IN('pg_catalog',
-                        'information_schema');'''
-        records = sql_ps.connect_bd(message, sql_request, 'select')
-        if data_name.lower() not in parse(records, 'table'):
-            sql_request = 'CREATE TABLE IF NOT EXISTS {} (like staff including all)'.format(data_name)
-            sql_ps.connect_bd(message, sql_request, 'create')
-            sql_request = 'ALTER TABLE {} DROP CONSTRAINT {}_pkey'.format(data_name, data_name)
-            sql_ps.connect_bd(message, sql_request, 'create')
-            sql_request = 'ALTER TABLE {} ADD PRIMARY KEY (install_date)'.format(data_name)
-            sql_ps.connect_bd(message, sql_request, 'create')
+        records = sql_ps.all_table_list()
+        if data_name.lower() not in records:
+            sql_ps.create_new_table(data_name)
         sql_request = "SELECT id_telegramm FROM {} WHERE id_telegramm = '{}'".format(data_name,
                                                                                      str(message.from_user.id))
         records = Counter(sql_ps.connect_bd(message, sql_request, 'select'))
         n = [records[i]*100 for i in records]
-        answer = 'Вы должны - ' + str(n[0]) + ' рублей'
+        try:
+            answer = 'Вы должны - ' + str(n[0]) + ' рублей'
+        except IndexError:
+            answer = 'Вы должны 0 рублей'
         bot.send_message(message.from_user.id, answer, reply_markup=keyboard)
     else:
         txt = 'Вы не зарегистрированы' + '\n' + 'Ваш id - ' + str(message.from_user.id)
