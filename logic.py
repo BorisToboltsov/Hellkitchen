@@ -252,33 +252,8 @@ def unit_def(message, id_telegramm, fio, keyboard):
                                      reply_markup=keyboard)
                     return
             else:
-                '''
-                bot.reply_to(message, 'Такого подразделения еще не создано, вы уверены что хотите создать его?')
-                bot.send_message(message.from_user.id, 'Введите да или нет')
-                bot.register_next_step_handler(message, new_unit_def, id_telegramm, fio, unit, keyboard)
-                '''
                 bot.reply_to(message, 'Такого подразделения еще не создано')
                 return
-
-
-'''
-def new_unit_def(message, id_telegramm, fio, unit, keyboard):
-    choice = message.text
-    try:
-        choice = choice.lower()
-    except:
-        bot.reply_to(message, 'Здесь необходимо ввести да или нет')
-        bot.register_next_step_handler(message, new_unit_def, id_telegramm, fio, unit, keyboard)
-    if choice == 'да':
-        bot.send_message(message.from_user.id, 'Является ли сотрудник администратором?')
-        bot.register_next_step_handler(message, new_staff_def, id_telegramm, fio, unit, keyboard)
-    elif choice == 'нет':
-        bot.reply_to(message, 'Выберите что необходимо сделать', reply_markup=keyboard)
-        return
-    else:
-        bot.reply_to(message, 'Здесь необходимо ввести да или нет')
-        bot.register_next_step_handler(message, new_unit_def, id_telegramm, fio, unit, keyboard)
-'''
 
 
 def registration(message):
